@@ -9,9 +9,16 @@ from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
 import joblib
+from sklearn.preprocessing import FunctionTransformer
 from sqlalchemy import create_engine
 
 app = Flask(__name__)
+
+
+def count_words(X):
+    return X.sum(axis=1)
+
+count_word_transformer = FunctionTransformer(count_words)
 
 
 def tokenize(text):
@@ -31,7 +38,7 @@ engine = create_engine('sqlite:///../data/DisasterResponse.db')
 df = pd.read_sql_table('CleanData', engine)
 
 # load model
-model = joblib.load("../models/classifier.pkl")
+model = joblib.load("../models/classifier_testing.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
@@ -81,7 +88,7 @@ def go():
     query = request.args.get('query', '')
 
     # use model to predict classification for query
-    classification_labels = model.predict([query])[0]
+    classification_labels = model.predict(pd.DataFrame(data=[query], columns=['message']))[0]
     classification_results = dict(zip(df.columns[4:], classification_labels))
 
     # This will render the go.html Please see that file.

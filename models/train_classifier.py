@@ -1,9 +1,12 @@
 import sys
+
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sqlalchemy import create_engine
 import pandas as pd
 from nltk import word_tokenize, sent_tokenize
 import re
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, FeatureUnion
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
@@ -30,7 +33,7 @@ def load_data(database_filepath):
     engine = create_engine('sqlite:///' + database_filepath)
     with engine.connect() as conn, conn.begin():
         df = pd.read_sql_table("CleanData", conn)
-    X = df['message']
+    X = df[['message']]
     Y = df[df.columns.difference(['id', 'message', 'original', 'genre'])]
     category_names = df.columns.difference(['id', 'message', 'original', 'genre'])
     return X, Y, category_names
@@ -49,17 +52,55 @@ def tokenize(text):
     return cleaned_tokens
 
 
+def count_words(X):
+    return X.sum(axis=1)
+
+
+count_word_transformer = FunctionTransformer(count_words)
+
+
 def build_model():
     """
     :return:
     """
+
+    text_transformer = Pipeline(
+        steps=[
+            ('vectorizer', CountVectorizer(tokenizer=tokenize)),
+            (
+                'features', FeatureUnion(
+                    [
+                        ('tfidf', TfidfTransformer()),
+                        ('text_length', count_word_transformer)
+                    ]
+                )
+            ),
+            ('features_scaler', StandardScaler(with_mean=False)),  # Scale the values
+        ],
+        verbose=True
+    )
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('txt', text_transformer, 'message')
+        ]
+    )
+
     pipeline = Pipeline(
         [
-            ('features', CountVectorizer(tokenizer=tokenize)),
+            ('preprocessor', preprocessor),
             ('clf', MultiOutputClassifier(RandomForestClassifier()))
         ]
     )
-    return pipeline
+
+    parameters = {
+        'preprocessor__txt__vectorizer__ngram_range': ((1, 1), (1, 2)),
+        'clf__estimator__n_estimators': [25, 50]
+    }
+
+    cv = GridSearchCV(pipeline, param_grid=parameters)
+
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
@@ -99,11 +140,11 @@ def main():
         model = build_model()
 
         print('Training model...')
-        with parallel_backend('threading', n_jobs=6):
-            model.fit(X_train, Y_train)
+        # with parallel_backend('threading', n_jobs=6):
+        model.fit(X_train.iloc[:500], Y_train.iloc[:500])
 
         print('Evaluating model...')
-        evaluate_model(model, X_test, Y_test, category_names)
+        evaluate_model(model, X_test.iloc[:50], Y_test.iloc[:50], category_names)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
         best_pipeline = model.best_estimator_
