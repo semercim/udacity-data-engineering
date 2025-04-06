@@ -18,6 +18,7 @@ app = Flask(__name__)
 def count_words(X):
     return X.sum(axis=1)
 
+
 count_word_transformer = FunctionTransformer(count_words)
 
 
@@ -50,6 +51,11 @@ def index():
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
 
+    multiple_classes = df.loc[:, ~df.columns.isin(['id', 'message', 'original', 'genre'])]
+    class_counts = multiple_classes.sum(axis=1).value_counts()
+
+    languages_equals = pd.DataFrame(data=(df['message'] == df['original']), columns=['SameLanguage'])
+
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
@@ -68,6 +74,43 @@ def index():
                 },
                 'xaxis': {
                     'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=class_counts.index,
+                    y=class_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Multilabel Messages',
+                'yaxis': {
+                    'title': "Counts of Messages"
+                },
+                'xaxis': {
+                    'title': "Counts of Labels"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=['Original', 'Translation'],
+                    y=[sum(languages_equals['SameLanguage']),
+                       len(languages_equals['SameLanguage']) - sum(languages_equals['SameLanguage'])]
+                )
+            ],
+
+            'layout': {
+                'title': 'Translation or Original',
+                'yaxis': {
+                    'title': "Language"
+                },
+                'xaxis': {
+                    'title': "Counts"
                 }
             }
         }
