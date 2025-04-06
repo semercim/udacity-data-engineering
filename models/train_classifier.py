@@ -19,6 +19,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score, classificat
 import numpy as np
 from sklearn.model_selection import GridSearchCV
 import pickle
+from joblib import parallel_backend
 
 
 def load_data(database_filepath):
@@ -80,19 +81,21 @@ def main():
         database_filepath, model_filepath = sys.argv[1:]
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
         X, Y, category_names = load_data(database_filepath)
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
         print('Building model...')
         model = build_model()
 
         print('Training model...')
-        model.fit(X_train, Y_train)
+        with parallel_backend('threading', n_jobs=6):
+            model.fit(X_train, Y_train)
 
         print('Evaluating model...')
         evaluate_model(model, X_test, Y_test, category_names)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
-        save_model(model, model_filepath)
+        best_pipeline = model.best_estimator_
+        save_model(best_pipeline, model_filepath)
 
         print('Trained model saved!')
 
