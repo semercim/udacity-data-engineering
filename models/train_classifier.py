@@ -33,7 +33,7 @@ def load_data(database_filepath):
     engine = create_engine('sqlite:///' + database_filepath)
     with engine.connect() as conn, conn.begin():
         df = pd.read_sql_table("CleanData", conn)
-    X = df[['message']]
+    X = df['message']
     Y = df[df.columns.difference(['id', 'message', 'original', 'genre'])]
     category_names = df.columns.difference(['id', 'message', 'original', 'genre'])
     return X, Y, category_names
@@ -64,11 +64,11 @@ def build_model():
     :return:
     """
 
-    text_transformer = Pipeline(
+    features = Pipeline(
         steps=[
             ('vectorizer', CountVectorizer(tokenizer=tokenize)),
             (
-                'features', FeatureUnion(
+                'united_features', FeatureUnion(
                     [
                         ('tfidf', TfidfTransformer()),
                         ('text_length', count_word_transformer)
@@ -80,21 +80,15 @@ def build_model():
         verbose=True
     )
 
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('txt', text_transformer, 'message')
-        ]
-    )
-
     pipeline = Pipeline(
         [
-            ('preprocessor', preprocessor),
+            ('features', features),
             ('clf', MultiOutputClassifier(RandomForestClassifier()))
         ]
     )
 
     parameters = {
-        'preprocessor__txt__vectorizer__ngram_range': ((1, 1), (1, 2)),
+        'features__vectorizer__ngram_range': ((1, 1), (1, 2)),
         'clf__estimator__n_estimators': [25, 50]
     }
 
