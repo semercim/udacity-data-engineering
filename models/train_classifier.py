@@ -63,6 +63,13 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    """
+    :param model:
+    :param X_test:
+    :param Y_test:
+    :param category_names:
+    :return:
+    """
     Y_pred = model.predict(X_test)
     Y_pred_np = np.array(Y_pred)
     Y_test_np = Y_test.values
@@ -72,6 +79,11 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
+    """
+    :param model:
+    :param model_filepath:
+    :return:
+    """
     pickle.dump(model, open(model_filepath, 'wb'))
     return
 
