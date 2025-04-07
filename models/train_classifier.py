@@ -11,7 +11,7 @@ from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer
 from sklearn.model_selection import train_test_split
 
 nltk.download('stopwords')
@@ -52,7 +52,7 @@ def tokenize(text):
 
 
 def count_words(X):
-    return X.sum(axis=1)
+    return (X>0).sum(axis=1)
 
 
 count_word_transformer = FunctionTransformer(count_words)
@@ -65,11 +65,11 @@ def build_model():
 
     features = Pipeline(
         steps=[
-            ('vectorizer', CountVectorizer(tokenizer=tokenize)),
+            ('vectorizer', TfidfVectorizer(tokenizer=tokenize, norm=None)),
             (
                 'united_features', FeatureUnion(
                     [
-                        ('tfidf', TfidfTransformer()),
+                        ('pass', 'passthrough'),
                         ('text_length', count_word_transformer)
                     ]
                 )
@@ -88,7 +88,6 @@ def build_model():
     )
 
     parameters = {
-        'features__vectorizer__ngram_range': ((1, 1), (1, 2)),
         'clf__estimator__n_estimators': [25, 50, 100]
     }
 
