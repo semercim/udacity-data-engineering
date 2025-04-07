@@ -1,10 +1,9 @@
 import sys
 
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sqlalchemy import create_engine
 import pandas as pd
-from nltk import word_tokenize, sent_tokenize
+from nltk import word_tokenize
 import re
 from sklearn.pipeline import Pipeline, FeatureUnion
 import nltk
@@ -84,15 +83,16 @@ def build_model():
         [
             ('features', features),
             ('clf', MultiOutputClassifier(RandomForestClassifier()))
-        ]
+        ],
+        verbose=True
     )
 
     parameters = {
         'features__vectorizer__ngram_range': ((1, 1), (1, 2)),
-        'clf__estimator__n_estimators': [25, 50]
+        'clf__estimator__n_estimators': [25, 50, 100]
     }
 
-    cv = GridSearchCV(pipeline, param_grid=parameters)
+    cv = GridSearchCV(pipeline, param_grid=parameters, pre_dispatch='8*n_jobs')
 
     return cv
 
@@ -134,11 +134,11 @@ def main():
         model = build_model()
 
         print('Training model...')
-        # with parallel_backend('threading', n_jobs=6):
-        model.fit(X_train.iloc[:500], Y_train.iloc[:500])
+        model.fit(X_train, Y_train)
 
         print('Evaluating model...')
-        evaluate_model(model, X_test.iloc[:50], Y_test.iloc[:50], category_names)
+        evaluate_model(model, X_test, Y_test, category_names)
+        print('Best parameter set: \n', model.best_params_)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
         best_pipeline = model.best_estimator_
