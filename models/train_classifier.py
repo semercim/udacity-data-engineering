@@ -40,8 +40,8 @@ def load_data(database_filepath):
 
 def tokenize(text):
     """
-    :param text:
-    :return:
+    :param text: the message to be tokenized
+    :return: a list of lists containing the tokenized messages
     """
     text = text.lower().strip()
     text = re.sub(r'[^a-zA-Z0-9]', ' ', text)
@@ -52,6 +52,10 @@ def tokenize(text):
 
 
 def count_words(X):
+    """
+    :param X: the matrix whose the number unique tokens in each row is to be counted
+    :return: a vector with the token counts in each row
+    """
     return (X>0).sum(axis=1)
 
 
@@ -60,9 +64,10 @@ count_word_transformer = FunctionTransformer(count_words)
 
 def build_model():
     """
-    :return:
+    :return: a pipelined cv classifier
     """
 
+    # Include the step to extract the features as a pipeline
     features = Pipeline(
         steps=[
             ('vectorizer', TfidfVectorizer(tokenizer=tokenize, norm=None)),
@@ -79,6 +84,7 @@ def build_model():
         verbose=True
     )
 
+    # Combined the feature pipeline with the classifier
     pipeline = Pipeline(
         [
             ('features', features),
@@ -87,10 +93,12 @@ def build_model():
         verbose=True
     )
 
+    # the example set os parameters to be search
     parameters = {
         'clf__estimator__n_estimators': [25, 50, 100]
     }
 
+    # create the cross validator with corresponding grid search parameters.
     cv = GridSearchCV(pipeline, param_grid=parameters, pre_dispatch='8*n_jobs')
 
     return cv
@@ -98,10 +106,10 @@ def build_model():
 
 def evaluate_model(model, X_test, Y_test, category_names):
     """
-    :param model:
-    :param X_test:
-    :param Y_test:
-    :param category_names:
+    :param model: model to be tested
+    :param X_test: the training data
+    :param Y_test: the labels of the training data
+    :param category_names: the names of the labels
     :return:
     """
     Y_pred = model.predict(X_test)
@@ -114,8 +122,8 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 def save_model(model, model_filepath):
     """
-    :param model:
-    :param model_filepath:
+    :param model: model to be saved
+    :param model_filepath: the path to save the model
     :return:
     """
     pickle.dump(model, open(model_filepath, 'wb'))
@@ -123,6 +131,10 @@ def save_model(model, model_filepath):
 
 
 def main():
+    """
+    The main steps to follow
+    :return:
+    """
     if len(sys.argv) == 3:
         database_filepath, model_filepath = sys.argv[1:]
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))

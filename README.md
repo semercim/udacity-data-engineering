@@ -5,6 +5,10 @@ This project requires python 3.11.
 
 # Disaster Response Pipeline Project
 
+This project is about classifying the text messages during a disaster scenario. The messages are classified
+into multi-classes depending on the content of the message. Please follow the steps below to create and store
+the cleaned dataset, train the model and use it in a local web app.
+
 ### Instructions:
 1. Run the following commands in the project's root directory to set up your database and model.
 

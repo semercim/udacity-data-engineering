@@ -5,9 +5,9 @@ from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
     """
-    :param messages_filepath:
-    :param categories_filepath:
-    :return:
+    :param messages_filepath: the path to the message data set csv file
+    :param categories_filepath: the path to the categories data set csv file
+    :return: a pandas dataframe containing the messages and their categories
     """
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
@@ -17,8 +17,8 @@ def load_data(messages_filepath, categories_filepath):
 
 def clean_data(df):
     """
-    :param df:
-    :return:
+    :param df: the pandas dataframe to be cleaned
+    :return: the cleaned pandas dataframe
     """
     ids_col = df['id'].copy(deep=True)
     categories = df['categories'].str.split(pat=";", expand=True)
@@ -38,18 +38,18 @@ def clean_data(df):
 
 def save_data(df, database_filename):
     """
-    :param df:
-    :param database_filename:
+    :param df: the pandas dataframe to be stored
+    :param database_filename: the path to the database to store
     :return:
     """
     engine = create_engine('sqlite:///' + database_filename)
-    df.to_sql('CleanData', engine, index=False)
+    df.to_sql('CleanData', engine, index=False, if_exists='replace')
     return
 
 
 def main():
     """
-    :return:
+    :return: the main function containing all the steps.
     """
     if len(sys.argv) == 4:
 
